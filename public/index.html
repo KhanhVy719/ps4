@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>Gamepad Signal Monitor</title>
+    <meta
+      name="description"
+      content="Real-time gamepad signal monitor - read and log controller inputs via Bluetooth"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <div class="logo">🎮</div>
+          <div>
+            <h1>Gamepad Monitor</h1>
+            <p class="subtitle">Real-time Controller Signal Reader</p>
+          </div>
+        </div>
+        <div class="status" id="connectionStatus">
+          <span class="status-dot"></span>
+          <span class="status-text">Chờ kết nối gamepad...</span>
+        </div>
+      </header>
+
+      <!-- Gamepad Info -->
+      <div class="gamepad-info" id="gamepadInfo">
+        <p>
+          Kết nối tay cầm qua Bluetooth hoặc USB, sau đó
+          <strong>bấm bất kỳ nút nào</strong> để trình duyệt nhận diện.
+        </p>
+      </div>
+
+      <!-- Controller Layout -->
+      <main class="controller-area">
+        <!-- Left side: Shoulder buttons + D-pad -->
+        <div class="controller-left">
+          <!-- Shoulder buttons L -->
+          <div class="shoulder-group">
+            <button class="btn-shoulder trigger" id="btn-L2" data-label="L2">
+              L2 <span class="analog-badge" id="val-L2">0.00</span>
+            </button>
+            <button class="btn-shoulder bumper" id="btn-L1" data-label="L1">
+              L1
+            </button>
+          </div>
+          <!-- D-pad -->
+          <div class="dpad-container">
+            <div class="dpad">
+              <button class="dpad-btn dpad-up" id="btn-dpad-up" data-label="↑">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M12 4l-8 8h5v8h6v-8h5z" />
+                </svg>
+              </button>
+              <button
+                class="dpad-btn dpad-right"
+                id="btn-dpad-right"
+                data-label="→"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M20 12l-8-8v5H4v6h8v5z" />
+                </svg>
+              </button>
+              <button
+                class="dpad-btn dpad-down"
+                id="btn-dpad-down"
+                data-label="↓"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M12 20l8-8h-5V4H9v8H4z" />
+                </svg>
+              </button>
+              <button
+                class="dpad-btn dpad-left"
+                id="btn-dpad-left"
+                data-label="←"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M4 12l8 8v-5h8V9h-8V4z" />
+                </svg>
+              </button>
+              <div class="dpad-center"></div>
+            </div>
+          </div>
+          <!-- Left Joystick -->
+          <div class="joystick-container">
+            <div class="joystick-label">Left Stick</div>
+            <div class="joystick" id="joystick-left">
+              <svg class="joystick-bg" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="58" fill="none" stroke="rgba(78,140,255,0.12)" stroke-width="1"/>
+                <line x1="60" y1="2" x2="60" y2="118" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                <line x1="2" y1="60" x2="118" y2="60" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                <circle cx="60" cy="60" r="20" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="3,3"/>
+                <circle cx="60" cy="60" r="40" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="3,3"/>
+              </svg>
+              <div class="joystick-thumb" id="thumb-left">
+                <div class="joystick-thumb-inner"></div>
+              </div>
+            </div>
+            <div class="joystick-values">
+              <span>X: <strong id="val-lx">0.00</strong></span>
+              <span>Y: <strong id="val-ly">0.00</strong></span>
+            </div>
+            <button class="btn-stick" id="btn-L3">L3</button>
+          </div>
+        </div>
+
+        <!-- Right side: Shoulder buttons + Action buttons -->
+        <div class="controller-right">
+          <!-- Shoulder buttons R -->
+          <div class="shoulder-group">
+            <button class="btn-shoulder trigger" id="btn-R2" data-label="R2">
+              R2 <span class="analog-badge" id="val-R2">0.00</span>
+            </button>
+            <button class="btn-shoulder bumper" id="btn-R1" data-label="R1">
+              R1
+            </button>
+          </div>
+          <!-- Action buttons -->
+          <div class="action-container">
+            <div class="action-buttons">
+              <button
+                class="action-btn btn-triangle"
+                id="btn-triangle"
+                data-label="△"
+              >
+                <span>△</span>
+              </button>
+              <button
+                class="action-btn btn-circle"
+                id="btn-circle"
+                data-label="○"
+              >
+                <span>○</span>
+              </button>
+              <button
+                class="action-btn btn-cross"
+                id="btn-cross"
+                data-label="×"
+              >
+                <span>×</span>
+              </button>
+              <button
+                class="action-btn btn-square"
+                id="btn-square"
+                data-label="□"
+              >
+                <span>□</span>
+              </button>
+            </div>
+          </div>
+          <!-- Right Joystick -->
+          <div class="joystick-container">
+            <div class="joystick-label">Right Stick</div>
+            <div class="joystick" id="joystick-right">
+              <svg class="joystick-bg" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="58" fill="none" stroke="rgba(168,85,247,0.12)" stroke-width="1"/>
+                <line x1="60" y1="2" x2="60" y2="118" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                <line x1="2" y1="60" x2="118" y2="60" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+                <circle cx="60" cy="60" r="20" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="3,3"/>
+                <circle cx="60" cy="60" r="40" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="3,3"/>
+              </svg>
+              <div class="joystick-thumb purple" id="thumb-right">
+                <div class="joystick-thumb-inner"></div>
+              </div>
+            </div>
+            <div class="joystick-values">
+              <span>X: <strong id="val-rx">0.00</strong></span>
+              <span>Y: <strong id="val-ry">0.00</strong></span>
+            </div>
+            <button class="btn-stick" id="btn-R3">R3</button>
+          </div>
+        </div>
+      </main>
+
+      <!-- Analog Values Bar -->
+      <section class="analog-section">
+        <h2>📊 Analog Values</h2>
+        <div class="analog-grid">
+          <div class="analog-item">
+            <span class="analog-label">Left X</span>
+            <div class="analog-bar-wrap"><div class="analog-bar blue" id="bar-lx"></div><div class="analog-bar-center"></div></div>
+            <span class="analog-val" id="bar-val-lx">0.00</span>
+          </div>
+          <div class="analog-item">
+            <span class="analog-label">Left Y</span>
+            <div class="analog-bar-wrap"><div class="analog-bar blue" id="bar-ly"></div><div class="analog-bar-center"></div></div>
+            <span class="analog-val" id="bar-val-ly">0.00</span>
+          </div>
+          <div class="analog-item">
+            <span class="analog-label">Right X</span>
+            <div class="analog-bar-wrap"><div class="analog-bar purple" id="bar-rx"></div><div class="analog-bar-center"></div></div>
+            <span class="analog-val" id="bar-val-rx">0.00</span>
+          </div>
+          <div class="analog-item">
+            <span class="analog-label">Right Y</span>
+            <div class="analog-bar-wrap"><div class="analog-bar purple" id="bar-ry"></div><div class="analog-bar-center"></div></div>
+            <span class="analog-val" id="bar-val-ry">0.00</span>
+          </div>
+          <div class="analog-item">
+            <span class="analog-label">L2</span>
+            <div class="analog-bar-wrap trigger-bar"><div class="analog-bar orange" id="bar-l2"></div></div>
+            <span class="analog-val" id="bar-val-l2">0.00</span>
+          </div>
+          <div class="analog-item">
+            <span class="analog-label">R2</span>
+            <div class="analog-bar-wrap trigger-bar"><div class="analog-bar orange" id="bar-r2"></div></div>
+            <span class="analog-val" id="bar-val-r2">0.00</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Log Panel -->
+      <section class="log-section">
+        <div class="log-header">
+          <h2>📋 Event Log</h2>
+          <div class="log-actions">
+            <label class="toggle-label">
+              <input type="checkbox" id="autoScroll" checked />
+              <span>Auto-scroll</span>
+            </label>
+            <button class="btn-clear" id="clearLog">Xóa log</button>
+          </div>
+        </div>
+        <div class="log-panel" id="logPanel">
+          <div class="log-empty">
+            Chưa có sự kiện nào. Kết nối gamepad và bấm nút để xem log.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script src="gamepad.js"></script>
+  </body>
+</html>
