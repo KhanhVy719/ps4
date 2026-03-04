@@ -22,17 +22,6 @@ app.get('/ping', (req, res) => {
 });
 
 // ===== Throttled state relay =====
-// Chỉ giữ state MỚI NHẤT, gửi theo interval cố định → tránh nghẽn ESP32
-let latestState = null;
-const RELAY_INTERVAL = 50; // Gửi mỗi 50ms (20Hz) → mượt mà không flood
-
-setInterval(() => {
-  if (latestState) {
-    io.emit('control:state', latestState);
-    latestState = null;
-  }
-}, RELAY_INTERVAL);
-
 // Socket.IO
 io.on('connection', (socket) => {
   console.log(`🎮 Client connected: ${socket.id}`);
@@ -55,19 +44,19 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Gamepad state (axes + triggers) → CHỈ LƯU MỚI NHẤT
+  // Gamepad state (axes + triggers) → volatile = tự drop nếu ESP32 chưa kịp xử lý
   socket.on('gamepad:state', (data) => {
     socket.emit('gamepad:state:ack', {
       clientTs: data.ts,
       serverTs: Date.now()
     });
 
-    // Ghi đè state cũ, chỉ giữ cái mới nhất
-    latestState = {
+    // volatile: nếu client chưa sẵn sàng → bỏ qua, không queue
+    socket.broadcast.volatile.emit('control:state', {
       axes: data.axes,
       triggers: data.triggers,
       ts: Date.now()
-    };
+    });
   });
 
   // Keyboard → relay ngay (ít message)
