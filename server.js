@@ -16,16 +16,28 @@ const PORT = process.env.PORT || 3000;
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, "public")));
 
-// Ping endpoint for latency test
+// Ping endpoint
 app.get('/ping', (req, res) => {
   res.json({ ts: Date.now() });
 });
 
-// Socket.IO - Gamepad signal relay
+// ===== Throttled state relay =====
+// Chỉ giữ state MỚI NHẤT, gửi theo interval cố định → tránh nghẽn ESP32
+let latestState = null;
+const RELAY_INTERVAL = 50; // Gửi mỗi 50ms (20Hz) → mượt mà không flood
+
+setInterval(() => {
+  if (latestState) {
+    io.emit('control:state', latestState);
+    latestState = null;
+  }
+}, RELAY_INTERVAL);
+
+// Socket.IO
 io.on('connection', (socket) => {
   console.log(`🎮 Client connected: ${socket.id}`);
 
-  // Client sends gamepad signal → echo back + relay to ESP32
+  // Gamepad button press/release → relay ngay (ít message)
   socket.on('gamepad:signal', (data) => {
     socket.emit('gamepad:ack', {
       clientTs: data.ts,
@@ -34,7 +46,6 @@ io.on('connection', (socket) => {
       type: data.type
     });
 
-    // Relay button press/release to ESP32
     socket.broadcast.emit('control:gamepad', {
       button: data.button,
       index: data.index,
@@ -44,24 +55,23 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Gamepad state update (axes + triggers) → relay to ESP32
+  // Gamepad state (axes + triggers) → CHỈ LƯU MỚI NHẤT
   socket.on('gamepad:state', (data) => {
     socket.emit('gamepad:state:ack', {
       clientTs: data.ts,
       serverTs: Date.now()
     });
 
-    // Relay full state to ESP32 (joystick + triggers)
-    socket.broadcast.emit('control:state', {
+    // Ghi đè state cũ, chỉ giữ cái mới nhất
+    latestState = {
       axes: data.axes,
       triggers: data.triggers,
       ts: Date.now()
-    });
+    };
   });
 
-  // Keyboard signal → echo back + broadcast to ESP32
+  // Keyboard → relay ngay (ít message)
   socket.on('keyboard:signal', (data) => {
-    // Echo back for latency measurement
     socket.emit('keyboard:ack', {
       clientTs: data.ts,
       serverTs: Date.now(),
@@ -69,7 +79,6 @@ io.on('connection', (socket) => {
       type: data.type
     });
 
-    // Relay to ALL other clients (ESP32) as control command
     socket.broadcast.emit('control:key', {
       code: data.code,
       key: data.key,
