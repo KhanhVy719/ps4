@@ -40,13 +40,22 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Keyboard signal
+  // Keyboard signal → echo back + broadcast to ESP32
   socket.on('keyboard:signal', (data) => {
+    // Echo back for latency measurement
     socket.emit('keyboard:ack', {
       clientTs: data.ts,
       serverTs: Date.now(),
       code: data.code,
       type: data.type
+    });
+
+    // Relay to ALL other clients (ESP32) as control command
+    socket.broadcast.emit('control:key', {
+      code: data.code,
+      key: data.key,
+      type: data.type,
+      ts: Date.now()
     });
   });
 
