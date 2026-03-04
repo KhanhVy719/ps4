@@ -96,7 +96,7 @@
   let latencyHistory = [];
   const LATENCY_HISTORY_SIZE = 20;
   let lastStateTs = 0;
-  const STATE_SEND_INTERVAL = 50; // Send state every 50ms
+  const STATE_SEND_INTERVAL = 100; // Gửi state mỗi 100ms (10Hz)
 
   // ========== Logging ==========
   function getTimestamp() {
@@ -327,20 +327,14 @@
     updateAnalogBar(barRX, barValRX, rx, false);
     updateAnalogBar(barRY, barValRY, ry, false);
 
-    // ===== Send full state to server periodically =====
+    // ===== Send state to server (chỉ axes + triggers, nhẹ) =====
     const now = Date.now();
     if (now - lastStateTs >= STATE_SEND_INTERVAL) {
       lastStateTs = now;
       socket.emit('gamepad:state', {
         ts: now,
         axes: [lx, ly, rx, ry],
-        triggers: [gp.buttons[6]?.value || 0, gp.buttons[7]?.value || 0],
-        buttons: trackedButtons.reduce((acc, idx) => {
-          if (idx < gp.buttons.length) {
-            acc[idx] = { pressed: gp.buttons[idx].pressed, value: gp.buttons[idx].value };
-          }
-          return acc;
-        }, {})
+        triggers: [gp.buttons[6]?.value || 0, gp.buttons[7]?.value || 0]
       });
     }
 
