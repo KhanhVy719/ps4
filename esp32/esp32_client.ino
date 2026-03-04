@@ -9,7 +9,7 @@
  * 
  * Điều khiển: W = tiến, S = lùi (nhận từ server qua WebSocket)
  * 
- * Thư viện cần cài:
+ * Thư viện cần cài (PlatformIO lib_deps):
  *   links2004/WebSockets @ ^2.4.1
  *   bblanchon/ArduinoJson @ ^7.0.0
  *   madhephaestus/ESP32Servo @ ^3.0.0
@@ -23,18 +23,17 @@
 #include <ESP32Servo.h>
 
 // ==================== CẤU HÌNH ====================
-const char* WIFI_SSID      = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD   = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID      = "VIETTEL_XUAN KHANH";
+const char* WIFI_PASSWORD   = "05052023";
 
 const char* SERVER_HOST     = "ps4-production.up.railway.app";
-const uint16_t SERVER_PORT  = 8080;
-const bool USE_SSL          = true;
+const uint16_t SERVER_PORT  = 443;
 
 // Servo
 #define SERVO_PIN 33
-#define SERVO_STOP    1500   // Microseconds - dừng
-#define SERVO_FORWARD 2000   // Microseconds - tiến (max)
-#define SERVO_REVERSE 1000   // Microseconds - lùi (max)
+#define SERVO_STOP    1500
+#define SERVO_FORWARD 2000
+#define SERVO_REVERSE 1000
 
 // ==================== BIẾN ====================
 SocketIOclient socketIO;
@@ -42,12 +41,12 @@ Servo servo;
 bool isConnected = false;
 
 // Trạng thái phím
-volatile bool keyW = false;  // Tiến
-volatile bool keyS = false;  // Lùi
+volatile bool keyW = false;
+volatile bool keyS = false;
 
-// Latency
+// Timing
 unsigned long lastServoUpdate = 0;
-const unsigned long SERVO_UPDATE_INTERVAL = 10; // Cập nhật servo mỗi 10ms (100Hz)
+const unsigned long SERVO_UPDATE_INTERVAL = 10; // 100Hz
 
 // ==================== XỬ LÝ SOCKET.IO ====================
 void socketIOEvent(socketIOmessageType_t type, uint8_t* payload, size_t length) {
@@ -55,7 +54,6 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t* payload, size_t length) 
     case sIOtype_DISCONNECT:
       Serial.println("[IO] Disconnected!");
       isConnected = false;
-      // An toàn: dừng servo khi mất kết nối
       servo.writeMicroseconds(SERVO_STOP);
       break;
 
@@ -69,27 +67,31 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t* payload, size_t length) 
       handleEvent(payload, length);
       break;
 
+    case sIOtype_ERROR:
+      Serial.printf("[IO] ERROR: %u %s\n", length, payload);
+      break;
+
     default:
       break;
   }
 }
 
 void handleEvent(uint8_t* payload, size_t length) {
+  Serial.printf("[IO] Event raw: %s\n", payload);
+
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, payload, length);
-  if (err) return;
-
-  const char* event = doc[0];
-
-  // Nhận tín hiệu bàn phím từ server
-  if (strcmp(event, "keyboard:signal") == 0 || 
-      strcmp(event, "keyboard:ack") == 0) {
-    // Nếu server relay lại tín hiệu keyboard
-    // Không cần xử lý ở đây vì ta lắng nghe sự kiện riêng
+  if (err) {
+    Serial.printf("[IO] JSON error: %s\n", err.c_str());
+    return;
   }
 
-  // ===== Lắng nghe tín hiệu điều khiển =====
-  // Server cần broadcast/relay keyboard events tới ESP32
+  const char* event = doc[0];
+  if (!event) return;
+
+  Serial.printf("[IO] Event: %s\n", event);
+
+  // Nhận tín hiệu điều khiển từ server
   if (strcmp(event, "control:key") == 0) {
     const char* code = doc[1]["code"];
     const char* type = doc[1]["type"];
@@ -102,30 +104,37 @@ void handleEvent(uint8_t* payload, size_t length) {
       }
       
       Serial.printf("[RX] %s %s → W:%d S:%d\n", type, code, keyW, keyS);
-      
-      // Cập nhật servo NGAY LẬP TỨC để latency thấp nhất
-      updateServo();
+      updateServo(); // Cập nhật ngay
     }
   }
 }
 
 // ==================== ĐIỀU KHIỂN SERVO ====================
+int currentPWM = SERVO_STOP;
+
 void updateServo() {
-  int pwm = SERVO_STOP;
+  int targetPWM = SERVO_STOP;
   
   if (keyW && !keyS) {
-    pwm = SERVO_FORWARD;  // Tiến
+    targetPWM = SERVO_FORWARD;
   } else if (keyS && !keyW) {
-    pwm = SERVO_REVERSE;  // Lùi
+    targetPWM = SERVO_REVERSE;
   }
-  // Cả 2 bấm hoặc không bấm → dừng
   
-  servo.writeMicroseconds(pwm);
+  servo.writeMicroseconds(targetPWM);
+  
+  if (targetPWM != currentPWM) {
+    const char* state = targetPWM == SERVO_FORWARD ? "FORWARD" : 
+                        targetPWM == SERVO_REVERSE ? "REVERSE" : "STOP";
+    Serial.printf("[SERVO] %s (PWM: %d)\n", state, targetPWM);
+    currentPWM = targetPWM;
+  }
 }
 
 // ==================== SETUP ====================
 void setup() {
   Serial.begin(115200);
+  delay(1000);
   Serial.println("\n=== ESP32 Servo Controller ===");
 
   // Servo
@@ -133,34 +142,37 @@ void setup() {
   servo.writeMicroseconds(SERVO_STOP);
   Serial.printf("Servo on GPIO%d\n", SERVO_PIN);
 
-  // WiFi - tối ưu tốc độ
-  WiFi.setSleep(false);  // Tắt WiFi sleep → latency thấp hơn
+  // WiFi
+  WiFi.mode(WIFI_STA);
+  WiFi.setSleep(false);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.printf("WiFi: %s", WIFI_SSID);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(300);
+  
+  int retries = 0;
+  while (WiFi.status() != WL_CONNECTED && retries < 40) {
+    delay(500);
     Serial.print(".");
+    retries++;
+  }
+  
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("\nWiFi FAILED! Restarting...");
+    ESP.restart();
   }
   Serial.printf("\nIP: %s\n", WiFi.localIP().toString().c_str());
 
-  // Socket.IO
-  if (USE_SSL) {
-    socketIO.beginSSL(SERVER_HOST, SERVER_PORT, "/socket.io/?EIO=4");
-  } else {
-    socketIO.begin(SERVER_HOST, SERVER_PORT, "/socket.io/?EIO=4");
-  }
+  // Socket.IO over SSL (Railway HTTPS)
+  socketIO.beginSSL(SERVER_HOST, SERVER_PORT, "/socket.io/?EIO=4&transport=websocket");
   socketIO.onEvent(socketIOEvent);
-  // Tối ưu: reconnect nhanh
-  socketIO.setReconnectInterval(1000);
+  socketIO.setReconnectInterval(2000);
 
-  Serial.printf("Server: %s:%d (SSL:%d)\n", SERVER_HOST, SERVER_PORT, USE_SSL);
+  Serial.printf("Connecting to: wss://%s:%d\n", SERVER_HOST, SERVER_PORT);
 }
 
 // ==================== LOOP ====================
 void loop() {
   socketIO.loop();
 
-  // Cập nhật servo định kỳ (safety fallback)
   unsigned long now = millis();
   if (now - lastServoUpdate >= SERVO_UPDATE_INTERVAL) {
     lastServoUpdate = now;
