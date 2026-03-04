@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no"
     />
-    <title>Gamepad Signal Monitor</title>
+    <title>Input Signal Monitor</title>
     <meta
       name="description"
       content="Real-time gamepad signal monitor - read and log controller inputs via Bluetooth"
@@ -26,7 +26,7 @@
         <div class="header-left">
           <div class="logo">🎮</div>
           <div>
-            <h1>Gamepad Monitor</h1>
+            <h1>Input Monitor</h1>
             <p class="subtitle">Real-time Controller Signal Reader</p>
           </div>
         </div>
@@ -48,6 +48,19 @@
           </div>
         </div>
       </header>
+
+      <!-- Tab Bar -->
+      <nav class="tab-bar">
+        <button class="tab-btn active" data-tab="gamepad">
+          <span class="tab-icon">🎮</span> Gamepad
+        </button>
+        <button class="tab-btn" data-tab="keyboard">
+          <span class="tab-icon">⌨️</span> Bàn phím
+        </button>
+      </nav>
+
+      <!-- ==================== GAMEPAD TAB ==================== -->
+      <div class="tab-panel active" id="tab-gamepad">
 
       <!-- Gamepad Info -->
       <div class="gamepad-info" id="gamepadInfo">
@@ -256,6 +269,93 @@
         </div>
       </section>
 
+      </div><!-- end tab-gamepad -->
+
+      <!-- ==================== KEYBOARD TAB ==================== -->
+      <div class="tab-panel" id="tab-keyboard">
+
+      <div class="gamepad-info">
+        <p>Bấm phím trên bàn phím để gửi tín hiệu lên server. Các phím sẽ <strong>sáng lên</strong> khi được nhấn.</p>
+      </div>
+
+      <!-- Keyboard Layout -->
+      <section class="keyboard-section">
+        <!-- Row 1: Number row -->
+        <div class="kb-row">
+          <div class="kb-key" data-key="Escape"><span>Esc</span></div>
+          <div class="kb-key" data-key="Digit1"><span>1</span></div>
+          <div class="kb-key" data-key="Digit2"><span>2</span></div>
+          <div class="kb-key" data-key="Digit3"><span>3</span></div>
+          <div class="kb-key" data-key="Digit4"><span>4</span></div>
+          <div class="kb-key" data-key="Digit5"><span>5</span></div>
+          <div class="kb-key" data-key="Digit6"><span>6</span></div>
+          <div class="kb-key" data-key="Digit7"><span>7</span></div>
+          <div class="kb-key" data-key="Digit8"><span>8</span></div>
+          <div class="kb-key" data-key="Digit9"><span>9</span></div>
+          <div class="kb-key" data-key="Digit0"><span>0</span></div>
+          <div class="kb-key wide-md" data-key="Backspace"><span>⌫</span></div>
+        </div>
+        <!-- Row 2: QWERTY -->
+        <div class="kb-row">
+          <div class="kb-key wide-sm" data-key="Tab"><span>Tab</span></div>
+          <div class="kb-key" data-key="KeyQ"><span>Q</span></div>
+          <div class="kb-key" data-key="KeyW"><span>W</span></div>
+          <div class="kb-key" data-key="KeyE"><span>E</span></div>
+          <div class="kb-key" data-key="KeyR"><span>R</span></div>
+          <div class="kb-key" data-key="KeyT"><span>T</span></div>
+          <div class="kb-key" data-key="KeyY"><span>Y</span></div>
+          <div class="kb-key" data-key="KeyU"><span>U</span></div>
+          <div class="kb-key" data-key="KeyI"><span>I</span></div>
+          <div class="kb-key" data-key="KeyO"><span>O</span></div>
+          <div class="kb-key" data-key="KeyP"><span>P</span></div>
+        </div>
+        <!-- Row 3: ASDF -->
+        <div class="kb-row">
+          <div class="kb-key wide-md" data-key="CapsLock"><span>Caps</span></div>
+          <div class="kb-key" data-key="KeyA"><span>A</span></div>
+          <div class="kb-key" data-key="KeyS"><span>S</span></div>
+          <div class="kb-key" data-key="KeyD"><span>D</span></div>
+          <div class="kb-key" data-key="KeyF"><span>F</span></div>
+          <div class="kb-key" data-key="KeyG"><span>G</span></div>
+          <div class="kb-key" data-key="KeyH"><span>H</span></div>
+          <div class="kb-key" data-key="KeyJ"><span>J</span></div>
+          <div class="kb-key" data-key="KeyK"><span>K</span></div>
+          <div class="kb-key" data-key="KeyL"><span>L</span></div>
+          <div class="kb-key wide-sm" data-key="Enter"><span>Enter</span></div>
+        </div>
+        <!-- Row 4: ZXCV -->
+        <div class="kb-row">
+          <div class="kb-key wide-lg" data-key="ShiftLeft"><span>Shift</span></div>
+          <div class="kb-key" data-key="KeyZ"><span>Z</span></div>
+          <div class="kb-key" data-key="KeyX"><span>X</span></div>
+          <div class="kb-key" data-key="KeyC"><span>C</span></div>
+          <div class="kb-key" data-key="KeyV"><span>V</span></div>
+          <div class="kb-key" data-key="KeyB"><span>B</span></div>
+          <div class="kb-key" data-key="KeyN"><span>N</span></div>
+          <div class="kb-key" data-key="KeyM"><span>M</span></div>
+          <div class="kb-key wide-lg" data-key="ShiftRight"><span>Shift</span></div>
+        </div>
+        <!-- Row 5: Bottom -->
+        <div class="kb-row">
+          <div class="kb-key wide-sm" data-key="ControlLeft"><span>Ctrl</span></div>
+          <div class="kb-key wide-sm" data-key="AltLeft"><span>Alt</span></div>
+          <div class="kb-key spacebar" data-key="Space"><span>Space</span></div>
+          <div class="kb-key wide-sm" data-key="AltRight"><span>Alt</span></div>
+          <div class="kb-key wide-sm" data-key="ControlRight"><span>Ctrl</span></div>
+        </div>
+        <!-- Arrow keys -->
+        <div class="kb-row kb-arrows">
+          <div class="kb-key arrow" data-key="ArrowUp"><span>↑</span></div>
+          <div class="kb-arrow-bottom">
+            <div class="kb-key arrow" data-key="ArrowLeft"><span>←</span></div>
+            <div class="kb-key arrow" data-key="ArrowDown"><span>↓</span></div>
+            <div class="kb-key arrow" data-key="ArrowRight"><span>→</span></div>
+          </div>
+        </div>
+      </section>
+
+      </div><!-- end tab-keyboard -->
+
       <!-- Log Panel -->
       <section class="log-section">
         <div class="log-header">
@@ -278,5 +378,6 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="gamepad.js"></script>
+    <script src="keyboard.js"></script>
   </body>
 </html>

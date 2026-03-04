@@ -9,6 +9,7 @@
 
   // ========== Socket.IO Connection ==========
   const socket = io();
+  window.__socket = socket;
   const serverStatus = document.getElementById('serverStatus');
   const serverStatusDot = serverStatus.querySelector('.status-dot');
   const serverStatusText = serverStatus.querySelector('.status-text');

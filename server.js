@@ -40,6 +40,16 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Keyboard signal
+  socket.on('keyboard:signal', (data) => {
+    socket.emit('keyboard:ack', {
+      clientTs: data.ts,
+      serverTs: Date.now(),
+      code: data.code,
+      type: data.type
+    });
+  });
+
   socket.on('disconnect', () => {
     console.log(`🎮 Client disconnected: ${socket.id}`);
   });

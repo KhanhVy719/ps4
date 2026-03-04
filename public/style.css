@@ -928,6 +928,147 @@ body::before {
   font-weight: 500;
 }
 
+/* ========== Tab Bar ========== */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  backdrop-filter: blur(20px);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tab-btn:hover {
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.03);
+}
+
+.tab-btn.active {
+  background: rgba(78,140,255,0.12);
+  color: var(--accent-blue);
+  box-shadow: 0 0 12px rgba(78,140,255,0.08);
+}
+
+.tab-icon {
+  font-size: 16px;
+}
+
+/* ========== Tab Panels ========== */
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* ========== Keyboard Section ========== */
+.keyboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(20px);
+  margin-bottom: 16px;
+}
+
+.kb-row {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+
+.kb-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  height: 46px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: default;
+  transition: all 0.08s ease;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.kb-key span {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.kb-key::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(78,140,255,0.25), transparent);
+  opacity: 0;
+  transition: opacity 0.08s ease;
+}
+
+.kb-key.active {
+  border-color: rgba(78,140,255,0.5);
+  color: var(--accent-blue);
+  background: rgba(78,140,255,0.1);
+  box-shadow: 0 0 18px rgba(78,140,255,0.2), inset 0 0 10px rgba(78,140,255,0.05);
+  transform: scale(0.95);
+}
+
+.kb-key.active::before {
+  opacity: 1;
+}
+
+/* Key sizes */
+.kb-key.wide-sm { min-width: 64px; }
+.kb-key.wide-md { min-width: 80px; }
+.kb-key.wide-lg { min-width: 96px; }
+.kb-key.spacebar { flex: 1; max-width: 340px; }
+.kb-key.arrow { min-width: 46px; height: 42px; font-size: 16px; }
+
+/* Arrow keys layout */
+.kb-arrows {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.kb-arrow-bottom {
+  display: flex;
+  gap: 5px;
+}
+
 /* ========== Responsive ========== */
 @media (max-width: 500px) {
   .app {
@@ -971,5 +1112,26 @@ body::before {
   .log-panel {
     height: 220px;
     font-size: 11px;
+  }
+
+  .kb-key {
+    min-width: 32px;
+    height: 38px;
+    font-size: 11px;
+    padding: 2px 4px;
+  }
+  .kb-key.wide-sm { min-width: 48px; }
+  .kb-key.wide-md { min-width: 56px; }
+  .kb-key.wide-lg { min-width: 64px; }
+  .kb-key.spacebar { max-width: 200px; }
+  .kb-key.arrow { min-width: 36px; height: 34px; }
+
+  .keyboard-section {
+    padding: 12px;
+    gap: 4px;
+  }
+
+  .kb-row {
+    gap: 3px;
   }
 }
