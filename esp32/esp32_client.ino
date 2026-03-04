@@ -39,15 +39,15 @@ const uint16_t SERVER_PORT  = 443;
 #define SERVO_PIN  33   // Servo lái (joystick)
 #define MOTOR_PIN  32   // Motor/ESC (R2/L2)
 
-// Servo lái
-#define STEER_CENTER  1500  // Thẳng
-#define STEER_LEFT    1000  // Hết trái
-#define STEER_RIGHT   2000  // Hết phải
+// Servo lái (SG90: 0°-180°, PWM 500-2400μs)
+#define STEER_CENTER  1450  // ~90° thẳng
+#define STEER_LEFT     500  // 0° hết trái
+#define STEER_RIGHT   2400  // 180° hết phải
 
-// Motor/ESC
-#define MOTOR_STOP    1500
-#define MOTOR_FULL_FWD 2000
-#define MOTOR_FULL_REV 1000
+// Motor/ESC (SG90: 500-2400μs)
+#define MOTOR_STOP    1450
+#define MOTOR_FULL_FWD 2400  // W / R2 = tiến
+#define MOTOR_FULL_REV  500  // S / L2 = lùi
 
 // ==================== BIẾN ====================
 SocketIOclient socketIO;
@@ -144,7 +144,7 @@ void applyControls() {
   if (steer == 0.0 && (keyA || keyD)) {
     steer = keyA ? -1.0 : (keyD ? 1.0 : 0.0);
   }
-  int steerPWM = STEER_CENTER + (int)(steer * 500); // 1000-2000
+  int steerPWM = STEER_CENTER + (int)(steer * 950); // 500-2400
   steerPWM = constrain(steerPWM, STEER_LEFT, STEER_RIGHT);
   servoSteer.writeMicroseconds(steerPWM);
 
@@ -160,7 +160,7 @@ void applyControls() {
     throttle = -1.0;             // S = lùi max
   }
 
-  int motorPWM = MOTOR_STOP + (int)(throttle * 500); // 1000-2000
+  int motorPWM = MOTOR_STOP + (int)(throttle * 950); // 500-2400
   motorPWM = constrain(motorPWM, MOTOR_FULL_REV, MOTOR_FULL_FWD);
   servoMotor.writeMicroseconds(motorPWM);
 }
