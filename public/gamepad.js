@@ -1,11 +1,29 @@
 /**
  * Gamepad Signal Monitor
  * Uses the Gamepad API to read controller inputs and display them in real-time.
- * Supports: D-pad, Action buttons, Shoulder buttons, Analog sticks, Triggers
+ * Sends gamepad signals to server via Socket.IO and measures round-trip latency.
  */
 
 (function () {
   'use strict';
+
+  // ========== Socket.IO Connection ==========
+  const socket = io();
+  const serverStatus = document.getElementById('serverStatus');
+  const serverStatusDot = serverStatus.querySelector('.status-dot');
+  const serverStatusText = serverStatus.querySelector('.status-text');
+
+  socket.on('connect', () => {
+    serverStatus.classList.add('connected');
+    serverStatusText.textContent = 'Server ✓';
+    addLog('system', '', `Đã kết nối server (ID: ${socket.id})`);
+  });
+
+  socket.on('disconnect', () => {
+    serverStatus.classList.remove('connected');
+    serverStatusText.textContent = 'Mất kết nối';
+    addLog('system', '', 'Mất kết nối server');
+  });
 
   // ========== DOM Elements ==========
   const connectionStatus = document.getElementById('connectionStatus');
@@ -14,41 +32,32 @@
   const logPanel = document.getElementById('logPanel');
   const clearLogBtn = document.getElementById('clearLog');
   const autoScrollCheckbox = document.getElementById('autoScroll');
+  const pingBtn = document.getElementById('pingBtn');
+  const pingValue = document.getElementById('pingValue');
 
   // Button elements mapped to standard gamepad indices
   const buttonElements = {
-    0: document.getElementById('btn-cross'),      // × (Cross)
-    1: document.getElementById('btn-circle'),     // ○ (Circle)
-    2: document.getElementById('btn-square'),     // □ (Square)
-    3: document.getElementById('btn-triangle'),   // △ (Triangle)
-    4: document.getElementById('btn-L1'),         // L1
-    5: document.getElementById('btn-R1'),         // R1
-    6: document.getElementById('btn-L2'),         // L2
-    7: document.getElementById('btn-R2'),         // R2
-    10: document.getElementById('btn-L3'),        // L3 (Left stick press)
-    11: document.getElementById('btn-R3'),        // R3 (Right stick press)
-    12: document.getElementById('btn-dpad-up'),   // D-pad Up
-    13: document.getElementById('btn-dpad-down'), // D-pad Down
-    14: document.getElementById('btn-dpad-left'), // D-pad Left
-    15: document.getElementById('btn-dpad-right') // D-pad Right
+    0: document.getElementById('btn-cross'),
+    1: document.getElementById('btn-circle'),
+    2: document.getElementById('btn-square'),
+    3: document.getElementById('btn-triangle'),
+    4: document.getElementById('btn-L1'),
+    5: document.getElementById('btn-R1'),
+    6: document.getElementById('btn-L2'),
+    7: document.getElementById('btn-R2'),
+    10: document.getElementById('btn-L3'),
+    11: document.getElementById('btn-R3'),
+    12: document.getElementById('btn-dpad-up'),
+    13: document.getElementById('btn-dpad-down'),
+    14: document.getElementById('btn-dpad-left'),
+    15: document.getElementById('btn-dpad-right')
   };
 
-  // Friendly names for buttons
   const buttonNames = {
-    0: '× Cross',
-    1: '○ Circle',
-    2: '□ Square',
-    3: '△ Triangle',
-    4: 'L1',
-    5: 'R1',
-    6: 'L2',
-    7: 'R2',
-    10: 'L3 (Left Stick)',
-    11: 'R3 (Right Stick)',
-    12: '↑ D-pad Up',
-    13: '↓ D-pad Down',
-    14: '← D-pad Left',
-    15: '→ D-pad Right'
+    0: '× Cross', 1: '○ Circle', 2: '□ Square', 3: '△ Triangle',
+    4: 'L1', 5: 'R1', 6: 'L2', 7: 'R2',
+    10: 'L3', 11: 'R3',
+    12: '↑ D-Up', 13: '↓ D-Down', 14: '← D-Left', 15: '→ D-Right'
   };
 
   // Joystick elements
@@ -81,6 +90,12 @@
   let logCount = 0;
   const MAX_LOG_ENTRIES = 500;
   const DEADZONE = 0.05;
+
+  // Latency tracking
+  let latencyHistory = [];
+  const LATENCY_HISTORY_SIZE = 20;
+  let lastStateTs = 0;
+  const STATE_SEND_INTERVAL = 50; // Send state every 50ms
 
   // ========== Logging ==========
   function getTimestamp() {
@@ -128,18 +143,43 @@
     }
   }
 
+  // ========== Latency ==========
+  function updateLatencyDisplay(latency) {
+    latencyHistory.push(latency);
+    if (latencyHistory.length > LATENCY_HISTORY_SIZE) latencyHistory.shift();
+
+    // Average of recent pings
+    const avg = Math.round(latencyHistory.reduce((a, b) => a + b, 0) / latencyHistory.length);
+
+    pingValue.textContent = `${avg} ms`;
+
+    pingBtn.classList.remove('good', 'medium', 'bad');
+    const cls = avg <= 30 ? 'good' : avg <= 80 ? 'medium' : 'bad';
+    pingBtn.classList.add(cls);
+  }
+
+  // Listen for server ack on button signals
+  socket.on('gamepad:ack', (data) => {
+    const latency = Date.now() - data.clientTs;
+    updateLatencyDisplay(latency);
+  });
+
+  // Listen for server ack on state updates
+  socket.on('gamepad:state:ack', (data) => {
+    const latency = Date.now() - data.clientTs;
+    updateLatencyDisplay(latency);
+  });
+
   // ========== Analog Helpers ==========
   function applyDeadzone(value) {
     return Math.abs(value) < DEADZONE ? 0 : value;
   }
 
   function updateJoystickThumb(thumb, x, y) {
-    // Map -1..1 to pixel offset within the 140px joystick (max ~50px radius)
     const maxOffset = 50;
     const px = x * maxOffset;
     const py = y * maxOffset;
     thumb.style.transform = `translate(${px}px, ${py}px)`;
-
     const moving = Math.abs(x) > DEADZONE || Math.abs(y) > DEADZONE;
     thumb.classList.toggle('moving', moving);
   }
@@ -149,12 +189,10 @@
     valEl.textContent = formatted;
 
     if (isTrigger) {
-      // Trigger: 0 to 1, left-aligned bar
       const pct = Math.max(0, value) * 100;
       barEl.style.left = '0';
       barEl.style.width = `${pct}%`;
     } else {
-      // Axis: -1 to 1, center-expanding bar
       const center = 50;
       const halfPct = (value / 2) * 100;
       if (value >= 0) {
@@ -171,32 +209,22 @@
   function onGamepadConnected(e) {
     connectedGamepad = e.gamepad;
     previousButtonStates = {};
-
     connectionStatus.classList.add('connected');
-    statusText.textContent = connectedGamepad.id;
+    statusText.textContent = 'Gamepad ✓';
     gamepadInfo.classList.add('hidden');
-
     addLog('system', '', `Gamepad kết nối: ${connectedGamepad.id}`);
-    console.log('🎮 Gamepad connected:', connectedGamepad);
   }
 
   function onGamepadDisconnected(e) {
     connectedGamepad = null;
     previousButtonStates = {};
-
     connectionStatus.classList.remove('connected');
-    statusText.textContent = 'Đã ngắt kết nối';
+    statusText.textContent = 'Gamepad';
     gamepadInfo.classList.remove('hidden');
-
     addLog('system', '', 'Gamepad đã ngắt kết nối');
-    console.log('🎮 Gamepad disconnected');
-
-    // Reset all button visuals
     Object.values(buttonElements).forEach(el => {
       if (el) el.classList.remove('active');
     });
-
-    // Reset joysticks
     updateJoystickThumb(thumbLeft, 0, 0);
     updateJoystickThumb(thumbRight, 0, 0);
   }
@@ -218,11 +246,10 @@
       return;
     }
 
-    // Update connection status if needed
     if (!connectedGamepad) {
       connectedGamepad = gp;
       connectionStatus.classList.add('connected');
-      statusText.textContent = gp.id;
+      statusText.textContent = 'Gamepad ✓';
       gamepadInfo.classList.add('hidden');
       addLog('system', '', `Gamepad kết nối: ${gp.id}`);
     }
@@ -242,17 +269,33 @@
       if (pressed && !wasPrevPressed) {
         if (el) el.classList.add('active');
         addLog('press', '', name);
-        console.log(`🟢 Press: ${name}`, { value: button.value });
+
+        // Send button press signal to server
+        socket.emit('gamepad:signal', {
+          ts: Date.now(),
+          button: name,
+          index: idx,
+          type: 'press',
+          value: button.value
+        });
       } else if (!pressed && wasPrevPressed) {
         if (el) el.classList.remove('active');
         addLog('release', '', name);
-        console.log(`🔴 Release: ${name}`);
+
+        // Send button release signal to server
+        socket.emit('gamepad:signal', {
+          ts: Date.now(),
+          button: name,
+          index: idx,
+          type: 'release',
+          value: 0
+        });
       }
 
       previousButtonStates[idx] = pressed;
     }
 
-    // ===== Analog Triggers (L2/R2 values) =====
+    // ===== Analog Triggers =====
     if (gp.buttons[6]) {
       const l2Val = gp.buttons[6].value;
       valL2.textContent = l2Val.toFixed(2);
@@ -265,82 +308,55 @@
     }
 
     // ===== Analog Sticks =====
-    // Standard gamepad axes: 0=LX, 1=LY, 2=RX, 3=RY
     const lx = applyDeadzone(gp.axes[0] || 0);
     const ly = applyDeadzone(gp.axes[1] || 0);
     const rx = applyDeadzone(gp.axes[2] || 0);
     const ry = applyDeadzone(gp.axes[3] || 0);
 
-    // Update joystick thumb positions
     updateJoystickThumb(thumbLeft, lx, ly);
     updateJoystickThumb(thumbRight, rx, ry);
 
-    // Update text values
     valLX.textContent = lx.toFixed(2);
     valLY.textContent = ly.toFixed(2);
     valRX.textContent = rx.toFixed(2);
     valRY.textContent = ry.toFixed(2);
 
-    // Update analog bars
     updateAnalogBar(barLX, barValLX, lx, false);
     updateAnalogBar(barLY, barValLY, ly, false);
     updateAnalogBar(barRX, barValRX, rx, false);
     updateAnalogBar(barRY, barValRY, ry, false);
 
+    // ===== Send full state to server periodically =====
+    const now = Date.now();
+    if (now - lastStateTs >= STATE_SEND_INTERVAL) {
+      lastStateTs = now;
+      socket.emit('gamepad:state', {
+        ts: now,
+        axes: [lx, ly, rx, ry],
+        triggers: [gp.buttons[6]?.value || 0, gp.buttons[7]?.value || 0],
+        buttons: trackedButtons.reduce((acc, idx) => {
+          if (idx < gp.buttons.length) {
+            acc[idx] = { pressed: gp.buttons[idx].pressed, value: gp.buttons[idx].value };
+          }
+          return acc;
+        }, {})
+      });
+    }
+
     requestAnimationFrame(pollGamepad);
   }
 
-  // ========== Clear Log ==========
-  clearLogBtn.addEventListener('click', () => {
-    logPanel.innerHTML = '<div class="log-empty">Log đã được xóa. Bấm nút trên gamepad để xem sự kiện.</div>';
-    logCount = 0;
+  // ========== Manual Ping ==========
+  pingBtn.addEventListener('click', () => {
+    const start = Date.now();
+    socket.emit('gamepad:signal', { ts: start, button: 'PING', type: 'ping', index: -1, value: 0 });
+    addLog('system', '', 'Đo latency tín hiệu...');
   });
 
-  // ========== Ping / Latency Test ==========
-  const pingBtn = document.getElementById('pingBtn');
-  const pingValue = document.getElementById('pingValue');
-  const autoPingCheckbox = document.getElementById('autoPing');
-  let autoPingInterval = null;
-
-  async function doPing() {
-    pingBtn.classList.remove('good', 'medium', 'bad');
-    pingBtn.classList.add('pinging');
-
-    const start = performance.now();
-    try {
-      await fetch('/ping', { cache: 'no-store' });
-      const latency = Math.round(performance.now() - start);
-
-      pingValue.textContent = `${latency} ms`;
-
-      // Color code
-      const cls = latency <= 50 ? 'good' : latency <= 100 ? 'medium' : 'bad';
-      setTimeout(() => {
-        pingBtn.classList.remove('pinging');
-        pingBtn.classList.add(cls);
-      }, 200);
-
-      addLog('system', '', `Ping: ${latency} ms`);
-    } catch (err) {
-      pingValue.textContent = 'Lỗi';
-      setTimeout(() => {
-        pingBtn.classList.remove('pinging');
-        pingBtn.classList.add('bad');
-      }, 200);
-      addLog('system', '', `Ping lỗi: ${err.message}`);
-    }
-  }
-
-  pingBtn.addEventListener('click', doPing);
-
-  autoPingCheckbox.addEventListener('change', () => {
-    if (autoPingCheckbox.checked) {
-      doPing();
-      autoPingInterval = setInterval(doPing, 2000);
-    } else {
-      clearInterval(autoPingInterval);
-      autoPingInterval = null;
-    }
+  // ========== Clear Log ==========
+  clearLogBtn.addEventListener('click', () => {
+    logPanel.innerHTML = '<div class="log-empty">Log đã được xóa.</div>';
+    logCount = 0;
   });
 
   // ========== Start ==========

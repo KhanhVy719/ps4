@@ -32,18 +32,19 @@
         </div>
         <div class="header-right">
           <div class="ping-widget" id="pingWidget">
-            <button class="ping-btn" id="pingBtn" title="Test latency">
+            <span class="ping-label">Signal</span>
+            <button class="ping-btn" id="pingBtn" title="Đo latency tín hiệu gamepad → server">
               <span class="ping-icon">⚡</span>
               <span class="ping-value" id="pingValue">-- ms</span>
             </button>
-            <label class="toggle-label ping-auto">
-              <input type="checkbox" id="autoPing">
-              <span>Auto</span>
-            </label>
+          </div>
+          <div class="status server-status" id="serverStatus">
+            <span class="status-dot"></span>
+            <span class="status-text">Server</span>
           </div>
           <div class="status" id="connectionStatus">
             <span class="status-dot"></span>
-            <span class="status-text">Chờ kết nối gamepad...</span>
+            <span class="status-text">Gamepad</span>
           </div>
         </div>
       </header>
@@ -275,6 +276,7 @@
       </section>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script src="gamepad.js"></script>
   </body>
 </html>
