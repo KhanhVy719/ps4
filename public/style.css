@@ -109,6 +109,81 @@ body::before {
   gap: 12px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ========== Ping Widget ========== */
+.ping-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ping-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 100px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ping-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.ping-btn:active {
+  transform: scale(0.96);
+}
+
+.ping-icon {
+  font-size: 14px;
+}
+
+.ping-btn.good {
+  border-color: rgba(52, 211, 153, 0.3);
+  color: var(--accent-green);
+  background: rgba(52, 211, 153, 0.06);
+}
+
+.ping-btn.medium {
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--color-shoulder);
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.ping-btn.bad {
+  border-color: rgba(244, 63, 94, 0.3);
+  color: var(--accent-red);
+  background: rgba(244, 63, 94, 0.06);
+}
+
+.ping-btn.pinging {
+  animation: pingPulse 0.4s ease;
+}
+
+@keyframes pingPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+
+.ping-auto {
+  font-size: 11px;
+}
+
 .header-left {
   display: flex;
   align-items: center;

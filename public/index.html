@@ -30,9 +30,21 @@
             <p class="subtitle">Real-time Controller Signal Reader</p>
           </div>
         </div>
-        <div class="status" id="connectionStatus">
-          <span class="status-dot"></span>
-          <span class="status-text">Chờ kết nối gamepad...</span>
+        <div class="header-right">
+          <div class="ping-widget" id="pingWidget">
+            <button class="ping-btn" id="pingBtn" title="Test latency">
+              <span class="ping-icon">⚡</span>
+              <span class="ping-value" id="pingValue">-- ms</span>
+            </button>
+            <label class="toggle-label ping-auto">
+              <input type="checkbox" id="autoPing">
+              <span>Auto</span>
+            </label>
+          </div>
+          <div class="status" id="connectionStatus">
+            <span class="status-dot"></span>
+            <span class="status-text">Chờ kết nối gamepad...</span>
+          </div>
         </div>
       </header>
 

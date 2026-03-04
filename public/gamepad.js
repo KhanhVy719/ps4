@@ -296,6 +296,53 @@
     logCount = 0;
   });
 
+  // ========== Ping / Latency Test ==========
+  const pingBtn = document.getElementById('pingBtn');
+  const pingValue = document.getElementById('pingValue');
+  const autoPingCheckbox = document.getElementById('autoPing');
+  let autoPingInterval = null;
+
+  async function doPing() {
+    pingBtn.classList.remove('good', 'medium', 'bad');
+    pingBtn.classList.add('pinging');
+
+    const start = performance.now();
+    try {
+      await fetch('/ping', { cache: 'no-store' });
+      const latency = Math.round(performance.now() - start);
+
+      pingValue.textContent = `${latency} ms`;
+
+      // Color code
+      const cls = latency <= 50 ? 'good' : latency <= 100 ? 'medium' : 'bad';
+      setTimeout(() => {
+        pingBtn.classList.remove('pinging');
+        pingBtn.classList.add(cls);
+      }, 200);
+
+      addLog('system', '', `Ping: ${latency} ms`);
+    } catch (err) {
+      pingValue.textContent = 'Lỗi';
+      setTimeout(() => {
+        pingBtn.classList.remove('pinging');
+        pingBtn.classList.add('bad');
+      }, 200);
+      addLog('system', '', `Ping lỗi: ${err.message}`);
+    }
+  }
+
+  pingBtn.addEventListener('click', doPing);
+
+  autoPingCheckbox.addEventListener('change', () => {
+    if (autoPingCheckbox.checked) {
+      doPing();
+      autoPingInterval = setInterval(doPing, 2000);
+    } else {
+      clearInterval(autoPingInterval);
+      autoPingInterval = null;
+    }
+  });
+
   // ========== Start ==========
   addLog('system', '', 'Hệ thống sẵn sàng - chờ kết nối gamepad...');
 
