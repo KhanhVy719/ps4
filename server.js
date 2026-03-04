@@ -25,23 +25,37 @@ app.get('/ping', (req, res) => {
 io.on('connection', (socket) => {
   console.log(`🎮 Client connected: ${socket.id}`);
 
-  // Client sends gamepad signal → server echoes back with timestamp for latency measurement
+  // Client sends gamepad signal → echo back + relay to ESP32
   socket.on('gamepad:signal', (data) => {
-    // Echo back to client with server timestamp
     socket.emit('gamepad:ack', {
       clientTs: data.ts,
       serverTs: Date.now(),
       button: data.button,
       type: data.type
     });
+
+    // Relay button press/release to ESP32
+    socket.broadcast.emit('control:gamepad', {
+      button: data.button,
+      index: data.index,
+      type: data.type,
+      value: data.value,
+      ts: Date.now()
+    });
   });
 
-  // Gamepad state update (all buttons/axes)
+  // Gamepad state update (axes + triggers) → relay to ESP32
   socket.on('gamepad:state', (data) => {
-    // Echo back for latency measurement
     socket.emit('gamepad:state:ack', {
       clientTs: data.ts,
       serverTs: Date.now()
+    });
+
+    // Relay full state to ESP32 (joystick + triggers)
+    socket.broadcast.emit('control:state', {
+      axes: data.axes,
+      triggers: data.triggers,
+      ts: Date.now()
     });
   });
 
